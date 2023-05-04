@@ -14,8 +14,9 @@ public class GameManager : MonoBehaviour
     public GameState state;
     public static event Action<GameState> OnGameStateChange;
     private int currentLevel = 1;
-    private List<PathDrawer> players = new();
+    public List<Player> players = new();
     public event Action OnAllPathsCreated;
+    public event Action OnAllPathsCompleted;
 
     private void Awake()
     {
@@ -24,21 +25,20 @@ public class GameManager : MonoBehaviour
         DontDestroyOnLoad(this);
     }
 
-    private void Start()
-    {
-    }
-
     private void Update()
     {
         if (state == GameState.Play)
         {
-            if (players.Count == 0)
-                players = FindObjectsOfType<PathDrawer>().ToList();
-            else if (players.All(x => x.isPathCreated))
+            if (players.Count != 0 && players.All(x => x.isPathCreated))
             {
-                OnAllPathsCreated();
-                UpdateGameState(GameState.Win);
+                UpdateGameState(GameState.Walking);
             }
+        }
+
+        if (state == GameState.Walking && players.All(x => x.isPathCompleted))
+        {
+            OnAllPathsCompleted?.Invoke();
+            UpdateGameState(GameState.Win);
         }
     }
 
@@ -49,22 +49,28 @@ public class GameManager : MonoBehaviour
         switch (newState)
         {
             case GameState.Win:
-                print("you win");
                 currentLevel++;
+                players.Clear();
                 break;
             case GameState.Lose:
-                print("you lose");
+                players.Clear();
+                break;
+            case GameState.Walking:
+                OnAllPathsCreated?.Invoke();
                 break;
             case GameState.Pause:
                 break;
             case GameState.Menu:
+                SceneManager.LoadScene("MainMenu");
                 break;
             case GameState.Skins:
+                SceneManager.LoadScene("Skins");
                 break;
             case GameState.Play:
                 SceneManager.LoadScene("Level" + currentLevel);
                 break;
             case GameState.Exit:
+                Application.Quit();
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(newState), newState, null);

@@ -9,7 +9,6 @@ public class PathDrawer : MonoBehaviour
     private Camera camera;
     private LineRenderer lineRenderer;
     private Path path = new();
-    public bool isPathCreated;
     private EntityType entityType;
     public Action<Path> OnNewPathCreated;
 
@@ -22,18 +21,21 @@ public class PathDrawer : MonoBehaviour
 
     private void OnMouseUp()
     {
-        if (isPathCreated) return;
+        if (GetComponent<Player>().isPathCreated) return;
         
         var ray = camera.ScreenPointToRay(Input.mousePosition);
         var hit = Physics2D.GetRayIntersection(ray, Mathf.Infinity);
 
-        if (hit.collider != null && hit.collider.CompareTag("Target") && (hit.collider.GetComponent<Entity>().entityType == entityType || hit.collider.GetComponent<Entity>().entityType == EntityType.Both))
+        //TODO: собрать часть условия в отдельные методы для верификации
+        if (hit.collider is not null && hit.collider.TryGetComponent<Target>(out var target) && !target.isLocked && (target.entityType == entityType || target.entityType == EntityType.Both))
         {
+            GetComponent<Player>().isPathCreated = true;
+            target.isLocked = true;
             OnNewPathCreated(path);
-            isPathCreated = true;
         }
         else
         {
+            path.Length = 0;
             path.Points.Clear();
             lineRenderer.positionCount = path.Points.Count;
             lineRenderer.SetPositions(path.Points.ToArray());
@@ -42,7 +44,7 @@ public class PathDrawer : MonoBehaviour
 
     private void OnMouseDrag()
     {
-        if (isPathCreated) return;
+        if (GetComponent<Player>().isPathCreated) return;
         
         var point = camera.ScreenToWorldPoint(Input.mousePosition);
         point = new Vector3(point.x, point.y, 0);

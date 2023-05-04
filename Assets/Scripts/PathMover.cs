@@ -9,18 +9,31 @@ using UnityEngine.AI;
 public class PathMover : MonoBehaviour
 {
     private Queue<Vector3> pathPoints = new();
+    private SpriteRenderer spriteRenderer;
     private Vector3? currentPoint;
     private float currentPos;
     private float speed = 5f;
     private Path path;
     public float timeToTarget = 10;
-    
+    private static readonly int IsWalking = Animator.StringToHash("IsWalking");
+
     private void Start()
     {
+        spriteRenderer = GetComponent<SpriteRenderer>();
         GetComponent<PathDrawer>().OnNewPathCreated += SetPath;
-        GameManager.Instance.OnAllPathsCreated += () => StartCoroutine(MoveAlongPath());
+        GameManager.Instance.OnAllPathsCreated += StartMoveCoroutine;
     }
 
+    private void OnDestroy()
+    {
+        GameManager.Instance.OnAllPathsCreated -= StartMoveCoroutine;
+    }
+
+    private void StartMoveCoroutine()
+    {
+        StartCoroutine(MoveAlongPath());
+    }
+    
     private void SetPath(Path path)
     {
         this.path = path;
@@ -30,6 +43,8 @@ public class PathMover : MonoBehaviour
     private IEnumerator MoveAlongPath()
     {
         print(path.Length / timeToTarget);
+        var animator = GetComponent<Animator>();
+        animator.SetBool(IsWalking, true);
         speed = path.Length / timeToTarget;
         
         while (currentPos < path.Length)
@@ -55,10 +70,15 @@ public class PathMover : MonoBehaviour
             float segmentPos = (currentPos - distanceTraveled) / Vector3.Distance(startPos, endPos);
             Vector3 newPos = Vector3.Lerp(startPos, endPos, segmentPos);
             
+            spriteRenderer.flipX = endPos.x - startPos.x < 0;
+
             transform.position = newPos == Vector3.zero ? path.Points.Last() : newPos;
 
             yield return new WaitForEndOfFrame();
         }
+        
+        animator.SetBool(IsWalking, false);
+        GetComponent<Player>().isPathCompleted = true;
         print(DateTime.Now.ToString("fff"));
     }
 

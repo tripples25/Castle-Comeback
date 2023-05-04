@@ -6,5 +6,6 @@
     Skins,
     Exit,
     Play,
-    Menu
+    Menu,
+    Walking
 }

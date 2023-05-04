@@ -1,15 +1,19 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 public class MenuManager : MonoBehaviour
 {
-    [SerializeField] private GameObject skinsPanel; 
-    
+    public static MenuManager Instance;
+
     private void Awake()
     {
+        if (Instance == null)
+            Instance = this;
+        DontDestroyOnLoad(this);
         GameManager.OnGameStateChange += MenuManagerOnGameStateChange;
     }
 
@@ -22,7 +26,6 @@ public class MenuManager : MonoBehaviour
     {
         if (state == GameState.Exit)
             print("Вы вышли");
-        skinsPanel.SetActive(state == GameState.Skins);
     }
 
     public void OpenSkinsPanel()
